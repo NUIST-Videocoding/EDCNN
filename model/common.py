@@ -41,34 +41,41 @@ class BaseBranch(nn.Module):
             nn.ReLU(True)
         )
 
+        self.branch2 = nn.Sequential(
+            nn.Conv2d(n_feat, n_feat // 4, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.ReLU(True),
+            wn(nn.Conv2d(n_feat // 4, n_feat // 4, kernel_size=3, stride=1, padding=(kernel_size // 2), bias=bias)),
+            nn.ReLU(True)
+        )
+
+        self.branch3 = nn.Sequential(
+            nn.Conv2d(n_feat, n_feat // 4, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.ReLU(True),
+            wn(nn.Conv2d(n_feat // 4, n_feat // 4, kernel_size=3, stride=1, padding=(kernel_size // 2), bias=bias)),
+            nn.ReLU(True)
+        )
+
     def forward(self, x):
         x0 = self.branch0(x)
         x1 = self.branch1(x)
-        x2 = self.branch1(x)
-        x3 = self.branch1(x)
+        x2 = self.branch2(x)
+        x3 = self.branch3(x)
         out = torch.cat((x0, x1, x2, x3), 1)
-
-        out += x
-
-        return out
+        return out + x
 
 
 class Upsampler(nn.Sequential):
     def __init__(self, conv, scale, n_feats, bn=False, act=False, bias=True):
-
         m = []
-        if (scale & (scale - 1)) == 0:
-            for _ in range(int(math.log(scale, 2))):
-                m.append(conv(n_feats, 4 * n_feats, 3, bias))
-                m.append(nn.PixelShuffle(2))
-                if bn:
-                    m.append(nn.BatchNorm2d(n_feats))
-                if act == 'relu':
-                    m.append(nn.ReLU(True))
-                elif act == 'prelu':
-                    m.append(nn.PReLU(n_feats))
-        else:
-            raise NotImplementedError
+        for _ in range(int(math.log(scale, 2))):
+            m.append(conv(n_feats, 4 * n_feats, 3, bias))
+            m.append(nn.PixelShuffle(2))
+            if bn:
+                m.append(nn.BatchNorm2d(n_feats))
+            if act == 'relu':
+                m.append(nn.ReLU(True))
+            elif act == 'prelu':
+                m.append(nn.PReLU(n_feats))
 
         super(Upsampler, self).__init__(*m)
 

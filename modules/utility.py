@@ -1,9 +1,8 @@
 import os
-import time
-from multiprocessing import Process
-from multiprocessing import Queue
-import imageio
+
+import numpy as np
 import torch
+import cv2
 
 
 class checkpoint:
@@ -13,40 +12,16 @@ class checkpoint:
         self.log = torch.Tensor()
         self.dir = args.save_name
         os.makedirs(self.dir, exist_ok=True)
-        self.n_processes = args.n_threads
 
     def get_path(self, *subdir):
         return os.path.join(self.dir, *subdir)
 
-    def begin_background(self):
-        self.queue = Queue()
-
-        def bg_target(queue):
-            while True:
-                if not queue.empty():
-                    filename, tensor = queue.get()
-                    if filename is None: break
-                    imageio.imwrite(filename, tensor.numpy())
-
-        self.process = [
-            Process(target=bg_target, args=(self.queue,)) \
-            for _ in range(self.n_processes)
-        ]
-
-        for p in self.process: p.start()
-
-    def end_background(self):
-        for _ in range(self.n_processes): self.queue.put((None, None))
-        while not self.queue.empty(): time.sleep(1)
-        for p in self.process: p.join()
-
     def save_results(self, filename, save_list):
         filename = self.get_path('{}'.format(filename))
         for v in save_list:
-            normalized = v[0].mul(1)
-            tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
-
-            self.queue.put(('{}.png'.format(filename), tensor_cpu))
+            img = np.uint8(v[0].detach().cpu().numpy().transpose(1, 2, 0))
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            cv2.imwrite('{}.png'.format(filename), img)
 
 
 def quantize(img, rgb_range):

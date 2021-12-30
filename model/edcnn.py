@@ -1,5 +1,6 @@
-from model import common
 import torch.nn as nn
+
+from model import common
 
 
 def make_model(args, parent=False):
@@ -39,7 +40,6 @@ class EDCNN(nn.Module):
         res += x
         x = self.tail(res)
         x = self.add_mean(x)
-
         return x
 
     def load_state_dict(self, state_dict, strict=True):

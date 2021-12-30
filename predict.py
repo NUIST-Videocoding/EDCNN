@@ -1,8 +1,9 @@
-from modules import utility
-import modules.data as data
-from modules.demo import Demo
-import model
 import argparse
+
+import model
+import modules.data as data
+from modules import utility
+from modules.demo import Demo
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_threads', type=int, default=2, help='number of threads for data loading')

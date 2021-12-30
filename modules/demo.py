@@ -18,13 +18,10 @@ class Demo:
     def test(self):
         torch.set_grad_enabled(False)
         self.model.eval()
-        self.ckp.begin_background()
         for image_tensors, path in tqdm(self.loader_test, ncols=80):
             filename = os.path.splitext(os.path.split(path[0])[-1])[0]
-            sr = self.model(image_tensors.to(device), 0)
-            sr = utility.quantize(sr, 255)
-            save_list = [sr]
+            hr = self.model(image_tensors.to(device), 0)
+            save_list = [utility.quantize(hr, 255)]
             self.ckp.save_results(filename, save_list)
-        self.ckp.end_background()
 
         torch.set_grad_enabled(True)
